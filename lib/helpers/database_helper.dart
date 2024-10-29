@@ -21,7 +21,7 @@ class DatabaseHelper {
       join(dbPath, 'item_details.db'),
       onCreate: (db, version) async {
         await db.execute(
-          '''CREATE TABLE ItemDetails(code TEXT PRIMARY KEY, name TEXT, price REAL, quantity INTEGER, discount INTEGER, total REAL)''',
+          '''CREATE TABLE ItemDetails (code TEXT PRIMARY KEY, name TEXT, price REAL)''',
         );
         await _insertInitialData(db);
       },
@@ -30,14 +30,9 @@ class DatabaseHelper {
   }
 
   Future<void> _insertInitialData(Database db) async {
-    final items = [
-      Item(code: '001', name: 'Item 1', price: 50.00),
-      Item(code: '002', name: 'Item 2', price: 60.00),
-      Item(code: '003', name: 'Item 3', price: 70.00),
-    ];
-    for (var item in items) {
-      await db.insert('ItemDetails', item.toMap());
-    }
+    await db.insert('ItemDetails', {'code': '001', 'name': 'Item 1', 'price': 50.0});
+    await db.insert('ItemDetails', {'code': '002', 'name': 'Item 2', 'price': 60.0});
+    await db.insert('ItemDetails', {'code': '003', 'name': 'Item 3', 'price': 70.0});
   }
 
   Future<Item?> fetchItemByCode(String code) async {
@@ -53,24 +48,16 @@ class DatabaseHelper {
     return null;
   }
 
-  Future<void> saveItem(Item item) async {
+  Future<void> saveItems(List<Item> items) async {
     final db = await database;
-    await db.insert('ItemDetails', item.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    for (var item in items) {
+      await db.insert(
+        'ItemDetails',
+        item.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
   }
 
-  Future<List<Item>> fetchItems() async {
-    final db = await database;
-    final maps = await db.query('ItemDetails');
-    return List.generate(
-      maps.length,
-      (i) => Item(
-        code: maps[i]['code'] as String,
-        name: maps[i]['name'] as String,
-        price: maps[i]['price'] as double,
-        quantity: maps[i]['quantity'] as int?,
-        discount: maps[i]['discount'] as int?,
-        total: maps[i]['total'] as double?,
-      ),
-    );
-  }
+  fetchItems() {}
 }

@@ -1,12 +1,16 @@
+// lib/view_models/item_view_model.dart
+
 import 'package:flutter/material.dart';
-import '../models/item.dart';
 import '../helpers/database_helper.dart';
+import '../models/item.dart';
 
 class ItemViewModel extends ChangeNotifier {
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
   List<Item> items = [];
-  double netAmount = 0.0;
+double get netAmount {
+  return items.fold(0, (sum, item) => sum + item.price);
+}
 
   Future<void> loadItems() async {
     items = await _dbHelper.fetchItems();
@@ -22,25 +26,16 @@ class ItemViewModel extends ChangeNotifier {
     final newItem = Item(
       code: code,
       name: name,
-      price: price,
-      quantity: quantity,
-      discount: discount,
-      total: total,
+      price: total,
     );
 
     items.add(newItem);
-    calculateNetAmount();
-    notifyListeners();
-  }
-
-  void calculateNetAmount() {
-    netAmount = items.fold(0, (sum, item) => sum + (item.total ?? 0));
     notifyListeners();
   }
 
   Future<void> saveAllItems() async {
     for (var item in items) {
-      await _dbHelper.saveItem(item);
+      await _dbHelper.saveItems(item as List<Item>);
     }
   }
 }
