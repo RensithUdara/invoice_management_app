@@ -1,5 +1,3 @@
-// lib/models/item.dart
-
 class Item {
   final String code;
   final String name;

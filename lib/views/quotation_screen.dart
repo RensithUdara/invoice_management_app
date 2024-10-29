@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/helpers/database_helper.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../view_models/item_view_model.dart';
-import '../models/item.dart';
 
 class QuotationScreen extends StatefulWidget {
   const QuotationScreen({super.key});
@@ -20,16 +18,17 @@ class QuotationScreenState extends State<QuotationScreen>
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _qtyController = TextEditingController();
   final TextEditingController _discountController = TextEditingController();
-  final DatabaseHelper _dbHelper = DatabaseHelper();
+  String? _selectedItem;
 
   String? _selectedItemCode;
-  late TabController _tabController;
   bool isGeneral = true;
+
+  // List to store items with qty and discount for DataTable display
+  final List<Map<String, dynamic>> _addedItems = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<ItemViewModel>(context, listen: false).loadItems();
     });
@@ -46,20 +45,6 @@ class QuotationScreenState extends State<QuotationScreen>
     return DateFormat('yyyy-MM-dd').format(now);
   }
 
-  void _fetchItemDetails(String code) async {
-    final item = await _dbHelper.fetchItemByCode(code);
-    if (item != null) {
-      setState(() {
-        _codeController.text = item.code;
-        _priceController.text = item.price.toString();
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Item not found")),
-      );
-    }
-  }
-
   void _addItem(ItemViewModel viewModel) {
     final code = _codeController.text;
     final name = _selectedItemCode;
@@ -74,16 +59,30 @@ class QuotationScreenState extends State<QuotationScreen>
       return;
     }
 
+    // Calculate total price after discount
+    final total = (price * qty) * (100 - discount) / 100;
+
+    // Add item details to _addedItems list for display in DataTable
+    _addedItems.add({
+      'name': name,
+      'price': price,
+      'qty': qty,
+      'discount': discount,
+      'total': total,
+    });
+
     viewModel.calculateAndAddItem(code, name, price, qty, discount);
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Item added successfully")),
     );
 
+    // Clear the fields after adding
     _codeController.clear();
     _priceController.clear();
     _qtyController.clear();
     _discountController.clear();
+    _reasonController.clear(); // Clear the reason field
     setState(() {
       _selectedItemCode = null;
     });
@@ -124,7 +123,6 @@ class QuotationScreenState extends State<QuotationScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Office selection dropdown and date
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -135,33 +133,24 @@ class QuotationScreenState extends State<QuotationScreen>
                         color: Colors.blue.shade700,
                         fontWeight: FontWeight.bold),
                   ),
-                  value: _selectedItemCode,
-                  onChanged: (value) async {
-                    if (value != null) {
-                      final item = await viewModel.getItemByCode(value);
-                      if (item != null) {
-                        setState(() {
-                          _selectedItemCode = item.code;
-                          _codeController.text = item.code;
-                          _priceController.text = item.price.toString();
-                        });
-                      }
-                    }
+                  value: _selectedItem,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedItem = value;
+                    });
                   },
-                  items: viewModel.items.isNotEmpty
-                      ? viewModel.items.map((item) {
-                          return DropdownMenuItem<String>(
-                            value: item.code,
-                            child: Text(item.name),
-                          );
-                        }).toList()
-                      : [],
+                  items: ["Aukland Offices", "Sri Lanka Office", "USA Office"]
+                      .map((location) {
+                    return DropdownMenuItem<String>(
+                      value: location,
+                      child: Text(location),
+                    );
+                  }).toList(),
                 ),
                 Text(
                   getCurrentDate(),
                   style: TextStyle(
-                      color: Colors.blue.shade700,
-                      fontWeight: FontWeight.bold),
+                      color: Colors.blue.shade700, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -246,21 +235,40 @@ class QuotationScreenState extends State<QuotationScreen>
             ),
             const SizedBox(height: 20),
 
-            // Input fields and ADD button
-            TextField(
-              controller: _codeController,
-              decoration: InputDecoration(
-                labelText: "Item Code",
-                labelStyle: TextStyle(color: Colors.grey.shade700),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+            DropdownButton<String>(
+              hint: Text(
+                "Select Item Code",
+                style: TextStyle(color: Colors.grey.shade700),
               ),
-              onChanged: (value) {
-                _fetchItemDetails(value);
+              value: _selectedItemCode,
+              onChanged: (String? newValue) async {
+                setState(() {
+                  _selectedItemCode = newValue;
+                });
+
+                if (newValue != null) {
+                  final item = await viewModel.getItemByCode(newValue);
+                  if (item != null) {
+                    setState(() {
+                      _codeController.text = item.code;
+                      _priceController.text = item.price.toStringAsFixed(2);
+                    });
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Item not found")),
+                    );
+                  }
+                }
               },
+              items: viewModel.items.map((item) {
+                return DropdownMenuItem<String>(
+                  value: item.code,
+                  child: Text(item.code),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 10),
+
             TextField(
               controller: _reasonController,
               decoration: InputDecoration(
@@ -335,38 +343,29 @@ class QuotationScreenState extends State<QuotationScreen>
             ),
             const SizedBox(height: 20),
 
-            // Data table with horizontal scrolling
+            // Data table with horizontal scrolling for item, qty, discount
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
                   headingRowColor:
-                      MaterialStateProperty.all(Colors.grey.shade200),
+                      WidgetStateProperty.all(Colors.grey.shade200),
                   columns: const [
-                    DataColumn(
-                        label: Text("Item",
-                            style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(
-                        label: Text("Price",
-                            style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(
-                        label: Text("Qty",
-                            style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(
-                        label: Text("Discount",
-                            style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(
-                        label: Text("Total",
-                            style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text("Item")),
+                    DataColumn(label: Text("Price")),
+                    DataColumn(label: Text("Qty")),
+                    DataColumn(label: Text("Discount")),
+                    DataColumn(label: Text("Total")),
                   ],
-                  rows: viewModel.items.map((item) {
+                  rows: _addedItems.map((item) {
                     return DataRow(
                       cells: [
-                        DataCell(Text(item.name)),
-                        DataCell(Text(item.price.toString())),
-                        DataCell(Text(_qtyController.text)),
-                        DataCell(Text(_discountController.text)),
-                        DataCell(Text((item.price).toStringAsFixed(2))),
+                        DataCell(Text(item['name'])),
+                        DataCell(Text(
+                            item['price'].toStringAsFixed(2))), // Updated line
+                        DataCell(Text(item['qty'].toString())),
+                        DataCell(Text(item['discount'].toString())),
+                        DataCell(Text(item['total'].toStringAsFixed(2))),
                       ],
                     );
                   }).toList(),
