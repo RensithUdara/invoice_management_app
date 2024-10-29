@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../view_models/item_view_model.dart';
+import 'item_list_screen.dart';
 
 class QuotationScreen extends StatefulWidget {
   const QuotationScreen({super.key});
@@ -19,11 +20,9 @@ class QuotationScreenState extends State<QuotationScreen>
   final TextEditingController _qtyController = TextEditingController();
   final TextEditingController _discountController = TextEditingController();
   String? _selectedItem;
-
   String? _selectedItemCode;
   bool isGeneral = true;
 
-  // List to store items with qty and discount for DataTable display
   final List<Map<String, dynamic>> _addedItems = [];
 
   @override
@@ -38,6 +37,21 @@ class QuotationScreenState extends State<QuotationScreen>
     setState(() {
       isGeneral = general;
     });
+
+    if (!general) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ItemListScreen(),
+          ),
+        ).then((_) {
+          setState(() {
+            isGeneral = true;
+          });
+        });
+      });
+    }
   }
 
   String getCurrentDate() {
@@ -59,10 +73,7 @@ class QuotationScreenState extends State<QuotationScreen>
       return;
     }
 
-    // Calculate total price after discount
     final total = (price * qty) * (100 - discount) / 100;
-
-    // Add item details to _addedItems list for display in DataTable
     _addedItems.add({
       'name': name,
       'price': price,
@@ -77,12 +88,11 @@ class QuotationScreenState extends State<QuotationScreen>
       const SnackBar(content: Text("Item added successfully")),
     );
 
-    // Clear the fields after adding
     _codeController.clear();
     _priceController.clear();
     _qtyController.clear();
     _discountController.clear();
-    _reasonController.clear(); // Clear the reason field
+    _reasonController.clear();
     setState(() {
       _selectedItemCode = null;
     });
@@ -95,12 +105,12 @@ class QuotationScreenState extends State<QuotationScreen>
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue.shade700,
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.note, color: Colors.white),
-            SizedBox(width: 8),
+            const Icon(Icons.note, color: Colors.white),
+            const SizedBox(width: 8),
             Text("Quotation",
-                style: TextStyle(
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: Colors.white, fontWeight: FontWeight.bold)),
           ],
         ),
@@ -155,7 +165,6 @@ class QuotationScreenState extends State<QuotationScreen>
               ],
             ),
             const SizedBox(height: 10),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -168,18 +177,15 @@ class QuotationScreenState extends State<QuotationScreen>
                       decoration: BoxDecoration(
                         color: isGeneral ? Colors.blue.shade700 : Colors.white,
                         borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(10),
-                          bottomLeft: Radius.circular(10),
-                        ),
+                            topLeft: Radius.circular(10),
+                            bottomLeft: Radius.circular(10)),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: const Center(
                         child: Text(
                           'General',
                           style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
+                              color: Colors.black, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -194,18 +200,15 @@ class QuotationScreenState extends State<QuotationScreen>
                       decoration: BoxDecoration(
                         color: !isGeneral ? Colors.blue.shade700 : Colors.white,
                         borderRadius: const BorderRadius.only(
-                          topRight: Radius.circular(10),
-                          bottomRight: Radius.circular(10),
-                        ),
+                            topRight: Radius.circular(10),
+                            bottomRight: Radius.circular(10)),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: const Center(
                         child: Text(
                           'Item',
                           style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
+                              color: Colors.black, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -214,7 +217,6 @@ class QuotationScreenState extends State<QuotationScreen>
               ],
             ),
             const SizedBox(height: 10),
-
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
@@ -234,12 +236,9 @@ class QuotationScreenState extends State<QuotationScreen>
               ),
             ),
             const SizedBox(height: 20),
-
             DropdownButton<String>(
-              hint: Text(
-                "Select Item Code",
-                style: TextStyle(color: Colors.grey.shade700),
-              ),
+              hint: Text("Select Item Code",
+                  style: TextStyle(color: Colors.grey.shade700)),
               value: _selectedItemCode,
               onChanged: (String? newValue) async {
                 setState(() {
@@ -268,7 +267,6 @@ class QuotationScreenState extends State<QuotationScreen>
               }).toList(),
             ),
             const SizedBox(height: 10),
-
             TextField(
               controller: _reasonController,
               decoration: InputDecoration(
@@ -342,33 +340,109 @@ class QuotationScreenState extends State<QuotationScreen>
               ],
             ),
             const SizedBox(height: 20),
-
-            // Data table with horizontal scrolling for item, qty, discount
             Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  headingRowColor:
-                      WidgetStateProperty.all(Colors.grey.shade200),
-                  columns: const [
-                    DataColumn(label: Text("Item")),
-                    DataColumn(label: Text("Price")),
-                    DataColumn(label: Text("Qty")),
-                    DataColumn(label: Text("Discount")),
-                    DataColumn(label: Text("Total")),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      spreadRadius: 3,
+                      blurRadius: 5,
+                      offset: const Offset(0, 3),
+                    ),
                   ],
-                  rows: _addedItems.map((item) {
-                    return DataRow(
-                      cells: [
-                        DataCell(Text(item['name'])),
-                        DataCell(Text(
-                            item['price'].toStringAsFixed(2))), // Updated line
-                        DataCell(Text(item['qty'].toString())),
-                        DataCell(Text(item['discount'].toString())),
-                        DataCell(Text(item['total'].toStringAsFixed(2))),
-                      ],
-                    );
-                  }).toList(),
+                ),
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.all(10),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
+                    headingRowColor:
+                        WidgetStateProperty.all(Colors.blue.shade200),
+                    dataRowColor: WidgetStateProperty.resolveWith<Color?>(
+                      (Set<WidgetState> states) {
+                        return states.contains(WidgetState.selected)
+                            ? Colors.blue.shade50
+                            : Colors.grey.shade50;
+                      },
+                    ),
+                    headingTextStyle: TextStyle(
+                      color: Colors.blue.shade900,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      letterSpacing: 0.8,
+                    ),
+                    dataTextStyle: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    columnSpacing:
+                        30, // More spacing between columns for clarity
+                    horizontalMargin: 16, // Increased margin for better padding
+                    dividerThickness:
+                        2.0, // Thicker divider for distinct row separation
+                    columns: const [
+                      DataColumn(label: Text("Item")),
+                      DataColumn(label: Text("Price")),
+                      DataColumn(label: Text("Qty")),
+                      DataColumn(label: Text("Discount")),
+                      DataColumn(label: Text("Total")),
+                    ],
+                    rows: _addedItems.map((item) {
+                      return DataRow(
+                        cells: [
+                          DataCell(
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text(item['name'],
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                          ),
+                          DataCell(
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text(item['price'].toStringAsFixed(2),
+                                  style: const TextStyle(fontSize: 13)),
+                            ),
+                          ),
+                          DataCell(
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text(item['qty'].toString(),
+                                  style: const TextStyle(fontSize: 13)),
+                            ),
+                          ),
+                          DataCell(
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text("${item['discount']}%",
+                                  style: TextStyle(
+                                      color: Colors.green.shade700,
+                                      fontSize: 13)),
+                            ),
+                          ),
+                          DataCell(
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text(item['total'].toStringAsFixed(2),
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
             ),
