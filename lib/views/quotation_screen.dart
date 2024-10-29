@@ -335,7 +335,7 @@ class QuotationScreenState extends State<QuotationScreen>
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Text("ADD"),
+                  child: const Text("ADD" ,style: TextStyle(color: Colors.white,)),
                 ),
               ],
             ),
@@ -360,10 +360,10 @@ class QuotationScreenState extends State<QuotationScreen>
                   scrollDirection: Axis.horizontal,
                   child: DataTable(
                     headingRowColor:
-                        WidgetStateProperty.all(Colors.blue.shade200),
-                    dataRowColor: WidgetStateProperty.resolveWith<Color?>(
-                      (Set<WidgetState> states) {
-                        return states.contains(WidgetState.selected)
+                        MaterialStateProperty.all(Colors.blue.shade200),
+                    dataRowColor: MaterialStateProperty.resolveWith<Color?>(
+                      (Set<MaterialState> states) {
+                        return states.contains(MaterialState.selected)
                             ? Colors.blue.shade50
                             : Colors.grey.shade50;
                       },
@@ -378,11 +378,9 @@ class QuotationScreenState extends State<QuotationScreen>
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
-                    columnSpacing:
-                        30, // More spacing between columns for clarity
-                    horizontalMargin: 16, // Increased margin for better padding
-                    dividerThickness:
-                        2.0, // Thicker divider for distinct row separation
+                    columnSpacing: 30,
+                    horizontalMargin: 16,
+                    dividerThickness: 2.0,
                     columns: const [
                       DataColumn(label: Text("Item")),
                       DataColumn(label: Text("Price")),

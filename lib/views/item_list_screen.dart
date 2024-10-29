@@ -17,7 +17,6 @@ class _ItemListScreenState extends State<ItemListScreen> {
   Widget build(BuildContext context) {
     final viewModel = Provider.of<ItemViewModel>(context);
 
-    // Filter items based on search query
     final filteredItems = viewModel.items.where((item) {
       return item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           item.code.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -38,7 +37,7 @@ class _ItemListScreenState extends State<ItemListScreen> {
           ),
           title: const Text(
             "Item List",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold , color: Colors.white),
           ),
           centerTitle: true,
           elevation: 10,
@@ -51,7 +50,6 @@ class _ItemListScreenState extends State<ItemListScreen> {
       ),
       body: Column(
         children: [
-          // Search Bar
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(

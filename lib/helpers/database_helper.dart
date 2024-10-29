@@ -1,5 +1,6 @@
-import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
+
 import '../models/item.dart';
 
 class DatabaseHelper {
@@ -30,14 +31,18 @@ class DatabaseHelper {
   }
 
   Future<void> _insertInitialData(Database db) async {
-    await db.insert('ItemDetails', {'code': '001', 'name': 'Item 1', 'price': 50.00});
-    await db.insert('ItemDetails', {'code': '002', 'name': 'Item 2', 'price': 60.00});
-    await db.insert('ItemDetails', {'code': '003', 'name': 'Item 3', 'price': 70.00});
+    await db.insert(
+        'ItemDetails', {'code': '001', 'name': 'Item 1', 'price': 50.00});
+    await db.insert(
+        'ItemDetails', {'code': '002', 'name': 'Item 2', 'price': 60.00});
+    await db.insert(
+        'ItemDetails', {'code': '003', 'name': 'Item 3', 'price': 70.00});
   }
 
   Future<Item?> fetchItemByCode(String code) async {
     final db = await database;
-    final result = await db.query('ItemDetails', where: 'code = ?', whereArgs: [code]);
+    final result =
+        await db.query('ItemDetails', where: 'code = ?', whereArgs: [code]);
     if (result.isNotEmpty) {
       return Item(
         code: result[0]['code'] as String,
@@ -48,7 +53,6 @@ class DatabaseHelper {
     return null;
   }
 
-  // Added fetchItems method
   Future<List<Item>> fetchItems() async {
     final db = await database;
     final result = await db.query('ItemDetails');
